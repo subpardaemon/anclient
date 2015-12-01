@@ -5,10 +5,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Bootstrap 101 Template</title>
+    <title>anclient</title>
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="css/datatables.min.css"/>
+    <style>
+    @-webkit-viewport { width: device-width; }
+	@-moz-viewport    { width: device-width; }
+	@-ms-viewport     { width: device-width; }
+	@-o-viewport      { width: device-width; }
+	@viewport         { width: device-width; }
+    </style>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
     <!--[if lt IE 9]>
@@ -17,11 +24,54 @@
     <![endif]-->
   </head>
   <body>
-    <h1>Hello, world!</h1>
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">assist.network <span class="glyphicon glyphicon-refresh loading"></span></a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#an-dash" class="an-menu">Dashboard</a></li>
+            <li><a href="#an-store" class="an-menu">Inventory</a></li>
+            <li class="dropdown">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Network <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="#an-my-demands" class="an-menu">My requests</a></li>
+                <li><a href="#an-my-offers" class="an-menu">My offers</a></li>
+                <li role="separator" class="divider"></li>
+                <li class="dropdown-header">Browse...</li>
+                <li><a href="#an-browse-demands" class="an-menu">Requests by others</a></li>
+                <li><a href="#an-browse-supplies" class="an-menu">Open supplies</a></li>
+              </ul>
+            </li>
+          </ul>
+          <ul class="nav navbar-nav navbar-right">
+            <li><a href="#an-user" class="an-menu"><span id="an-username">testuser</span></a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+    <br><br><br>
 
+    <div class="container">
+
+      <!-- Main component for a primary marketing message or call to action -->
+      <div class="jumbotron">
+        <h1>WAVA</h1>
+        <p>Vava.</p>
+      </div>
+
+    </div> <!-- /container -->
+  
     <script src="js/jquery-1.11.3.min.js"></script>
-    <script type="text/javascript" src="js/datatables.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/datatables.min.js"></script>
     <script src="js/latinise.js"></script>
     <script src="js/anclient.js"></script>
   </body>
