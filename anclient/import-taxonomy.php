@@ -24,7 +24,7 @@ if (!empty($_REQUEST['taxo'])) {
 	$cat_now = false;
 	$subcat_now = false;
 	// ha kesz vannak a forditasok a tobbi nyelvre, ide kell bepakolni oket
-	$default_pcs = array('hu'=>'db');
+	$default_pcs = array('hu'=>'db','en'=>'pcs');
 	$current_pcs = $default_pcs;
 	foreach($lines as $line) {
 		$line = trim($line);
