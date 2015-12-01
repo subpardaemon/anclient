@@ -47,13 +47,11 @@ var anclient = {
 		},
 		initreal: function() {
 			$(".dropdown-toggle").dropdown();
-			/*
 			anclient.ajaxap(anclient.urlprefix+'api/').then(function(d) {
 				anclient.serverreply = d;
 			},function(stat,err) {
 				console.log('ext.err: '+stat+' '+err);
 			});
-			*/
 		}
 };
 
