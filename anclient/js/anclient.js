@@ -1,5 +1,5 @@
 /**
- * 
+ * spec at : https://docs.google.com/document/d/1Qw4u6ftavHCkzi5dxusGqDxuUzKxQRSgYhBVdTvT2Os
  */
 
 var anclient = {
