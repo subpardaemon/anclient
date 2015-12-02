@@ -5,11 +5,15 @@
 var anclient = {
 		sessionid: null,
 		serverreply: null,
+		lang: 'hu',
 		urlprefix: 'http://assist-network.herokuapp.com/',
 		taxonomy: {},
 		ajaxap: function(url,params) {
 			if (url=='') {
 				url = anclient.urlprefix+'api/com';
+			}
+			else if (url.substr(0,1)=='/') {
+				url = anclient.urlprefix+url.substr(1);
 			}
 			if (typeof params=='undefined') {
 				params = {};
@@ -28,7 +32,7 @@ var anclient = {
 						$('.loading').hide();
 						rej(tst,err);
 					},
-					method:'POST',
+					method:'GET',
 					success:function(dt) {
 						$('.loading').hide();
 						res(dt);
@@ -37,17 +41,23 @@ var anclient = {
 			});
 		},
 		init: function() {
-			anclient.ajaxap('http://www.pdx.hu/jobs/an/js/taxonomy.json').then(function(d) {
-				anclient.taxonomy = d;
-				console.log('ext: loaded taxonomy db');
+			if (localStorage.getItem('an-taxonomy')===null) {
+				anclient.ajaxap('http://www.pdx.hu/jobs/an/js/taxonomy.json').then(function(d) {
+					anclient.taxonomy = d;
+					localStorage.setItem('an-taxonomy',JSON.stringify(d));
+					console.log('ext: loaded taxonomy db');
+					anclient.initreal();
+				},function(stat,err) {
+					console.log('ext.err: '+stat+' '+err);
+				});
+			} else {
+				anclient.taxonomy = JSON.parse(localStorage.getItem('an-taxonomy'));
 				anclient.initreal();
-			},function(stat,err) {
-				console.log('ext.err: '+stat+' '+err);
-			});
+			}
 		},
 		initreal: function() {
 			$(".dropdown-toggle").dropdown();
-			anclient.ajaxap(anclient.urlprefix+'api/').then(function(d) {
+			anclient.ajaxap('/api/').then(function(d) {
 				anclient.serverreply = d;
 			},function(stat,err) {
 				console.log('ext.err: '+stat+' '+err);
