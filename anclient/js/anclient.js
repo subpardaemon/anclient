@@ -56,8 +56,6 @@ var anclient = {
 				});
 			});
 		},
-		posn: function() {
-		},
 		init: function() {
 			if (localStorage.getItem('an-taxonomy')===null) {
 				anclient.ajaxap('http://www.pdx.hu/jobs/an/js/taxonomy.json').then(function(d) {
@@ -115,7 +113,9 @@ var anclient = {
 						}
 					}
 					if (ha===false) {
-						
+						if (e.prop('tagName')=='SELECT') {
+							if (e.prop('multiple'))
+						}
 					}
 				} else {
 					console.log('form.err: no matching field for '+n+' under selector '+formslc);
