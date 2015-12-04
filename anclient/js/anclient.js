@@ -97,24 +97,55 @@ var anclient = {
 				ha = false;
 				e = $(formslc+' [name="'+n+'"]');
 				if (e.length>0) {
-					e = e.first();
-					et = e.attr('type');
-					if (et!==undefined) {
-						et = et.toLowerCase();
-						if (et=='radio') {
+					if (e.length>1) {
+						if (e.first().attr('type')==='radio') {
 							$(formslc+' [name="'+n+'"]').filter('[value="'+fdata[n].toString()+'"]').prop('checked',true);
 							ha = true;
 						}
-						else if (et=='checkbox') {
-							if (e.attr('value')==fdata[n]) {
-								e.prop('checked',true);
-								ha = true;
+						else if (e.first().attr('type')==='checkbox') {
+							if (Object.prototype.toString.call(fdata[n])!=='[object Array]') {
+								fdata[n] = [fdata[n]];
+							}
+							for(var i=0;i<fdata[n].length;i++) {
+								$(formslc+' [name="'+n+'"]').filter('[value="'+fdata[n][i].toString()+'"]').prop('checked',true);
 							}
 						}
-					}
-					if (ha===false) {
-						if (e.prop('tagName')=='SELECT') {
-							if (e.prop('multiple'))
+					} else {
+						e = e.first();
+						et = e.attr('type');
+						if (et!==undefined) {
+							et = et.toLowerCase();
+							if (et=='radio') {
+								$(formslc+' [name="'+n+'"]').filter('[value="'+fdata[n].toString()+'"]').prop('checked',true);
+								ha = true;
+							}
+							else if (et=='checkbox') {
+								if (e.attr('value')==fdata[n]) {
+									e.prop('checked',true);
+									ha = true;
+								}
+							}
+						}
+						if (ha===false) {
+							if (e.prop('tagName')=='SELECT') {
+								if (e.prop('multiple')===true) {
+									if (Object.prototype.toString.call(fdata[n])!=='[object Array]') {
+										fdata[n] = [fdata[n]];
+									}
+									e.find('option').each(function() {
+										if ($.inArray($(this).attr('value'),fdata[n])) {
+											$(this).prop('selected',true);
+										} else {
+											$(this).prop('selected',false);
+										}
+									});
+								} else {
+									if (Object.prototype.toString.call(fdata[n])==='[object Array]') {
+										fdata[n] = fdata[n][0];
+									}
+									e.val(fdata[n]);
+								}
+							}
 						}
 					}
 				} else {

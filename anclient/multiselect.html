@@ -1,0 +1,25 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script src="js/jquery-1.11.3.min.js"></script>
+<script>
+$(document).ready(function() {
+	var e = $('#aa');
+	console.log(e.prop('multiple'));
+	e.find('option').each(function() {
+		if ($(this).attr('value')!='') $(this).prop('selected',true);
+	});
+	e.val('3');
+});
+</script>
+<title>Insert title here</title>
+</head>
+<body>
+<select id="aa" name="qx" multiple>
+	<option value="">optval none</option>
+	<option value="2">optval 2</option> 
+	<option value="3">optval 3</option> 
+</select>
+</body>
+</html>
