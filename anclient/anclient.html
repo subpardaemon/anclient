@@ -9,12 +9,34 @@
     <!-- Bootstrap -->
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="css/datatables.min.css"/>
+    <link href="css/style.css" rel="stylesheet">
     <style>
     @-webkit-viewport { width: device-width; }
 	@-moz-viewport    { width: device-width; }
 	@-ms-viewport     { width: device-width; }
 	@-o-viewport      { width: device-width; }
 	@viewport         { width: device-width; }
+	.navbar-brand>img {
+		max-height: 100%;
+		height: 100%;
+		width: auto;
+		margin: 0;
+		display: inline-block;
+	}
+	.tag {
+		cursor: pointer;
+		font-size: 100%;
+		display: inline-block;
+	}
+	.label-sm {
+		font-size: 90%;
+	}
+	.tag span.category {
+		font-weight: normal;
+	}
+	.tag span.glyphicon {
+		margin-top: 2px;
+	}
     </style>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -33,7 +55,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">assist.network <span class="glyphicon glyphicon-refresh loading"></span></a>
+          <a class="navbar-brand" href="#"><img src="css/anlogo.svg"> assist.network <span class="glyphicon glyphicon-refresh loading"></span></a>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
@@ -66,6 +88,28 @@
         <h1>WAVA</h1>
         <p>Vava.</p>
       </div>
+      <div class="panel panel-default">
+      	<div class="panel-heading">
+      		<div class="panel-title">Edit data</div>
+      	</div>
+      	<div class="panel-body">
+      		<form role="form" id="an-major-form">
+      			<div class="form-group">
+      				<label>What? (Product or service)</label>
+      				<input type="hidden" name="what" value="">
+      				<input type="text" class="form-control input-sm form-skip" id="an-form-what-entry" placeholder="start typing">
+      				<div id="an-form-what-label">
+      					<span class="tag label label-primary label-md">something <span class="category">(cat/subcat)</span>&nbsp;&nbsp;<span class="glyphicon glyphicon-remove-sign"></span></span>
+      				</div>
+      				<div id="an-form-what-hints">
+      					<span class="tag label label-default label-sm">something <span class="category">(cat/subcat)</span></span>
+      					<span class="tag label label-default label-sm">something <span class="category">(cat/subcat)</span></span>
+      				</div>
+      			</div>
+      		</form>
+      	</div>
+      </div>
+      
 
     </div> <!-- /container -->
   

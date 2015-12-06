@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>oi oi oi</title>
+<style>
+span.term,span.prop,span.bam {
+	border: 1px solid gray;
+	padding: 2px;
+	border-radius: 3px;
+	font-weight: bold;
+	display: inline-block;
+	margin-right: 3px;
+	cursor: pointer;
+}
+span.bam {
+	color: gray;
+}
+span.term>span {
+	font-weight: normal;
+	color: brown;
+}
+</style>
+<script src="jquery-1.10.2.min.js"></script>
+<script src="latinise.js"></script>
+<script src="dict.js"></script>
+<script>
+var hinto = {
+	curr_ctx: null,
+	curr_lng: 'hu',
+	curr_hints: [],
+	curr_mode: 'term',
+	dict: null,
+	init: function() {
+		hinto.dict = an_dict;
+		$('#term_opts').off('click').on('click',hinto.termchoice);
+		$('#prop_opts').off('click').on('click',hinto.propchoice);
+		$('#prop_selected').off('click').on('click',hinto.propkill);
+		$('#term').off('keyup').on('keyup',hinto.terminput);
+		$('#prop').off('keyup').prop('disabled',true);
+		$('#commpacket').off('click').on('click',hinto.commpacket);
+		hinto.create_hints(hinto.curr_ctx);
+		hinto.setbymode();
+	},
+	setbymode: function() {
+		if (hinto.curr_mode=='term') {
+			$('#props,#quant').hide();
+		} else {
+			$('#props,#quant').show();
+		}
+	},
+	terminput: function(evt) {
+		var cv = $('#term').val();
+		var m = hinto.get_matchup(cv);
+		var res = '';
+		for(var i=0;i<m.length;i++) {
+			res += '<span class="term" data-key="'+m[i]['key']+'" data-context="'+m[i]['ctxchange']+'">'+m[i]['label_primary']+' (<span>'+m[i]['label_secondary']+'</span>)</span> ';
+		}
+		$('#term_opts').html(res);
+	},
+	termchoice: function(evt) {
+		evt.preventDefault();
+		var t = $(evt.target);
+		if (t.attr('data-context')===undefined) {
+			t = t.parents('span.term');
+		}
+		console.log(t);
+		t.parent().find('span.term').hide();
+		t.show();
+		$('#term').prop('disabled',true).hide();
+		hinto.create_hints(t.attr('data-context'));
+		hinto.curr_mode = 'prop';
+		$('#prop_opts').html('');
+		$('#prop').off('keyup').prop('disabled',false).on('keyup',hinto.propinput).focus();
+		var cl = '';
+		var cg = hinto.curr_ctx.split('/');
+		var n = cg[0];
+		var m = cg[1];
+		for(var i=0;i<hinto.dict[n]['subcats'][m]['qtys'].length;i++) {
+			cl += '<option value="'+hinto.dict[n]['subcats'][m]['qtys'][i]['key']+'">'+hinto.dict[n]['subcats'][m]['qtys'][i]['labels'][[hinto.curr_lng]]+'</option>';
+		}
+		$('#qtyu').html(cl);
+		hinto.setbymode();
+	},
+	propinput: function(evt) {
+		var cv = $('#prop').val();
+		var m = hinto.get_matchup(cv);
+		var res = '';
+		for(var i=0;i<m.length;i++) {
+			res += '<span class="prop" data-key="'+m[i]['key']+'">'+m[i]['label_primary']+'</span> ';
+		}
+		$('#prop_opts').html(res);
+	},
+	propchoice: function(evt) {
+		evt.preventDefault();
+		var t = $(evt.target);
+		if (t.attr('data-key')===undefined) {
+			t = t.parents('span.term');
+		}
+		console.log(t);
+		$('#prop_selected').append('<span class="bam" data-key="'+t.attr('data-key')+'">'+t.text()+' &times;</span> ');
+		$('#prop_opts').html('');
+		$('#prop').val('').focus();
+	},
+	propkill: function(evt) {
+		evt.preventDefault();
+		evt.preventDefault();
+		var t = $(evt.target);
+		if (t.attr('data-key')===undefined) {
+			t = t.parents('span.term');
+		}
+		console.log(t);
+		t.remove();
+		$('#prop').val('').focus();
+	},
+	get_matchup: function(expr) {
+		var matches = [];
+		if (expr.length<1) return matches;
+		if (hinto.curr_hints.length==0) return matches;
+		expr = latiniser.latinise(expr).toLowerCase();
+		for(var i=0;i<hinto.curr_hints.length;i++) {
+			if (hinto.curr_hints[i]['match'].indexOf(expr)>-1) {
+				matches.push(hinto.curr_hints[i]);
+			}
+		}
+		matches.sort(function(a,b) {
+			if (a['label_primary']>b['label_primary']) return 1;
+			else if (a['label_primary']<b['label_primary']) return -1;
+			return 0;
+		});
+		return matches;
+	},
+	commpacket: function() {
+		var cp = '@demo:D:g/'+hinto.curr_ctx+':';
+		$('#prop_selected span.bam').each(function() {
+			cp += '#'+$(this).attr('data-key');
+		});
+		cp += ':'+$('#qty').val()+' '+$('#qtyu option:selected').val();
+		alert(cp);
+	},
+	create_hints: function(ctx) {
+		hinto.curr_ctx = ctx;
+		hinto.curr_hints = [];
+		if (ctx===null) {
+			var curr_cat = '';
+			for(var n in hinto.dict) {
+				for(var m in hinto.dict[n]['subcats']) {
+					curr_cat = hinto.dict[n]['label'][hinto.curr_lng]+'/'+hinto.dict[n]['subcats'][m]['label'][hinto.curr_lng];
+					for(var i=0;i<hinto.dict[n]['subcats'][m]['terms'].length;i++) {
+						var ci = hinto.dict[n]['subcats'][m]['terms'][i];
+						var cl = ci['labels'][hinto.curr_lng]['primary'];
+						var ck = ci['key'];
+						hinto.curr_hints.push({'match':latiniser.latinise(cl),'key':ck,'label_primary':cl,'label_secondary':curr_cat,'ctxchange':n+'/'+m+'/'+ck});
+						if (ci['labels'][hinto.curr_lng]['synonyms'].length>0) {
+							for(var j=0;j<ci['labels'][hinto.curr_lng]['synonyms'].length;j++) {
+								if (ci['legacy']=='no') {
+									hinto.curr_hints.push({'match':latiniser.latinise(ci['labels'][hinto.curr_lng]['synonyms'][j]),'key':ck,'label_primary':cl+' ['+ci['labels'][hinto.curr_lng]['synonyms'][j]+']','label_secondary':curr_cat,'ctxchange':n+'/'+m+'/'+ck});
+								}
+							}
+						}
+					}
+				}
+			}
+		} else {
+			var cg = ctx.split('/');
+			var n = cg[0];
+			var m = cg[1];
+			for(var i=0;i<hinto.dict[n]['props'].length;i++) {
+				var ci = hinto.dict[n]['props'][i];
+				var cl = ci['labels'][hinto.curr_lng]['primary'];
+				var ck = ci['key'];
+				if (ci['legacy']=='no') {
+					hinto.curr_hints.push({'match':latiniser.latinise(cl),'key':ck,'label_primary':cl,'label_secondary':null,'ctxchange':null});
+					if (ci['labels'][hinto.curr_lng]['synonyms'].length>0) {
+						for(var j=0;j<ci['labels'][hinto.curr_lng]['synonyms'].length;j++) {
+							hinto.curr_hints.push({'match':latiniser.latinise(ci['labels'][hinto.curr_lng]['synonyms'][j]),'key':ck,'label_primary':cl+' ['+ci['labels'][hinto.curr_lng]['synonyms'][j]+']','label_secondary':null,'ctxchange':null});
+						}
+					}
+				}
+			}
+			// horribe code duplication, sorry, it's a messy world
+			for(var i=0;i<hinto.dict[n]['subcats'][m]['props'].length;i++) {
+				var ci = hinto.dict[n]['subcats'][m]['props'][i];
+				var cl = ci['labels'][hinto.curr_lng]['primary'];
+				var ck = ci['key'];
+				if (ci['legacy']=='no') {
+					hinto.curr_hints.push({'match':latiniser.latinise(cl),'key':ck,'label_primary':cl,'label_secondary':null,'ctxchange':null});
+					if (ci['labels'][hinto.curr_lng]['synonyms'].length>0) {
+						for(var j=0;j<ci['labels'][hinto.curr_lng]['synonyms'].length;j++) {
+							hinto.curr_hints.push({'match':latiniser.latinise(ci['labels'][hinto.curr_lng]['synonyms'][j]),'key':ck,'label_primary':cl+' ['+ci['labels'][hinto.curr_lng]['synonyms'][j]+']','label_secondary':null,'ctxchange':null});
+						}
+					}
+				}
+			}
+		}
+	}
+};
+$(document).ready(function() {
+	hinto.init();
+});
+</script>
+</head>
+<body>
+<h1>Taxo demo</h1>
+Ha frissíteni akarod a taxonomy listát, előbb <a href="taxo.php">menj ide</a>, csinálj egy generálást, aztán vissza ide, f5, és bob's your uncle.
+<h2>Mire van szukseged?</h2>
+<input type="text" id="term" placeholder="kezdd el irni">
+<div id="term_opts"></div>
+<div id="props">
+<h3>Milyenre?</h3>
+<input type="text" id="prop" placeholder="kezdd el irni">
+<div id="prop_opts"></div>
+<br><br>
+<div id="prop_selected"></div>
+</div>
+<div id="quant">
+<h4>Mennyire?</h4>
+<input type="number" id="qty" value="1">
+<select id="qtyu">
+</select>
+<br><br>
+<button id="commpacket">commpacket</button>
+</div>
+</body>
+</html>

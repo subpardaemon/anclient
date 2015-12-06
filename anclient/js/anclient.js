@@ -90,6 +90,92 @@ var anclient = {
 				console.log('ext.err: '+stat+' '+err);
 			});
 		},
+		/**
+		 * Converts an ArrayBuffer to a base64-encoded String.
+		 * @param {ArrayBuffer} buffer
+		 * @returns {String}
+		 */
+		abuf2b64: function( buffer ) {
+		    var binary = '';
+		    var bytes = new Uint8Array( buffer );
+		    var len = bytes.byteLength;
+		    for (var i = 0; i < len; i++) {
+		        binary += String.fromCharCode( bytes[ i ] );
+		    }
+		    return window.btoa( binary );
+		},
+		/**
+		 * Get data as an object with item name-value pairs from a form.
+		 * Due to file handling capability and FileReader's M.O., it returns a promise, 
+		 * whose resolve callback gets the form data object as its sole parameter.
+		 * Skips all form items that have CSS class 'form-skip'. 
+		 * @param {String} formslc CSS selector for the form
+		 * @return {Promise}
+		 */
+		form2vals: function(formslc) {
+			return new Promise(function(resolve,reject) {
+				var inobj = $(formslc);
+				var form;
+				if (inobj.prop('tagName')=='FORM') {
+					form = inobj;
+				} else {
+					form = inobj.parents('form');
+				}
+				var fd = form.serializeArray();
+				var fins = {}, rn = '';
+				for(var i=0;i<fd.length;i++) {
+					var fie = form.find('[name="'+fd[i].name+'"]').first();
+					if (fie.hasClass('form-skip')===false) {
+						if (fd[i].name.indexOf('[')>0) {
+							rn = fd[i].name.substr(0,fd[i].name.length-2);
+							if (typeof fins[rn]=='undefined') {
+								fins[rn] = [];
+							}
+							fins[rn].push(fd[i].value);
+						} else {
+							fins[fd[i].name] = fd[i].value;
+						}
+					}
+				}
+				var filez = [];
+				form.find('input[type="file"]').each(function() {
+					var fl = this.files;
+					var fcn = $(this).attr('name');
+					fins[fcn] = [];
+					var fid;
+					for(i=0;i<fl.length;i++) {
+						fid = {'name':fl[i].name,'size':fl[i].size,'status':'reading','fob':fl[i]};
+						filez.push(fid);
+						fins[fcn].push(fid);
+					}
+				});
+				if (filez.length==0) {
+					resolve(fins);
+				} else {
+					for(i=0;i<filez.length;i++) {
+						var fre = new FileReader();
+						fre.onload = (function(ind) {
+							return function(evt) {
+								filez[ind]['status'] = undefined;
+								filez[ind]['fob'] = undefined;
+								delete(filez[ind]['status']);
+								delete(filez[ind]['fob']);
+								filez[ind]['contents'] = anclient.abuf2b64(evt.target.result);
+								if (ind==(filez.length-1)) {
+									resolve(fins);
+								}
+							};
+						})(i);
+						fre.readAsArrayBuffer(filez[i].fob);
+					}
+				}
+			});
+		},
+		/**
+		 * Fill a HTML form with data
+		 * @param {String} formslc CSS selector for the form
+		 * @param {Object} fdata plain object containing form item name-value pairs
+		 */
 		vals2form: function(formslc,fdata) {
 			var e,et,ha;
 			$(formslc+' [type="checkbox"]').prop('checked',false);
@@ -145,6 +231,8 @@ var anclient = {
 									}
 									e.val(fdata[n]);
 								}
+							} else {
+								e.val(fdata[n]);
 							}
 						}
 					}
@@ -152,7 +240,6 @@ var anclient = {
 					console.log('form.err: no matching field for '+n+' under selector '+formslc);
 				}
 			}
-			
 		}
 };
 
