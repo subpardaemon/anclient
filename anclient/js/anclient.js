@@ -607,7 +607,7 @@ var anclient = {
 						anclient.form.set_term('');
 						if (v!='') {
 							$('#an-form-what-entry').val(v);
-							anclient.form.show_hints_for_what();
+							anclient.form.show_hints_for_what({which:null});
 						}
 					}
 				});
