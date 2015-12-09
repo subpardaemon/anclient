@@ -7,8 +7,12 @@
     <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
     <title>anclient</title>
     <!-- Bootstrap -->
-    <link href="css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="css/datatables.min.css"/>
+    <link href="css/superhero.bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="css/dataTables.bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/buttons.bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/keyTable.bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/responsive.bootstrap.css"/>
+    <link rel="stylesheet" type="text/css" href="css/select.bootstrap.min.css"/>
     <link href="css/style.css" rel="stylesheet">
     <style>
     @-webkit-viewport { width: device-width; }
@@ -80,20 +84,20 @@
       </div>
     </nav>
     <br><br><br>
+    
+    <div class="container" id="an-store">
+    	<table id="an-store-table">
+    	</table>
+    </div>
 
-    <div class="container">
-
-      <!-- Main component for a primary marketing message or call to action -->
-      <div class="jumbotron">
-        <h1>WAVA</h1>
-        <p>Vava.</p>
-      </div>
+    <div class="container" id="an-form-float">
       <div class="panel panel-default">
       	<div class="panel-heading">
       		<div class="panel-title">Edit data</div>
       	</div>
       	<div class="panel-body">
       		<form role="form" id="an-major-form">
+      			<input type="hidden" name="id" value="" id="an-form-entry-id">
       			<div class="form-group">
       				<label>What? (Product or service <span class="forminfo inventory">in inventory</span><span class="forminfo offer">to offer</span><span class="forminfo demand">to request</span>)</label>
       				<input type="hidden" name="what" id="an-form-what-value" value="">
@@ -102,14 +106,14 @@
       				</div>
       				<div id="an-form-what-label">
       				</div>
+      				<div id="an-form-attrs-labels">
+      				</div>
       			</div>
       			<div class="form-group" id="an-form-attrs">
       				<label>Which is like... (<span class="forminfo inventory">Actual</span><span class="forminfo offer">Actual</span><span class="forminfo demand">Required</span> attributes)</label>
       				<input type="hidden" name="attrs" id="an-form-attrs-value" value="">
       				<input type="text" class="form-control input-sm form-skip" id="an-form-attrs-entry" placeholder="start typing">
       				<div id="an-form-attrs-hints">
-      				</div>
-      				<div id="an-form-attrs-labels">
       				</div>
       			</div>
       			<div class="form-group" id="an-form-attrsnot">
@@ -132,6 +136,23 @@
       					</div>
       				</div>
       			</div>
+      			<div class="checkbox forminfo inventory">
+      				<label>
+      					<input type="checkbox" name="assupply" value="yes" id="an-form-assupply">
+      					Make this item available as a supply for matching/similar requests
+      				</label>
+      			</div>
+      			<div class="checkbox forminfo inventory">
+      				<label>
+      					<input type="checkbox" name="browseable" value="yes" id="an-form-browseable">
+      					List this item when others browse for available supplies without explicitly matching requests
+      				</label>
+      			</div>
+      			<div role="toolbar" class="btn-toolbar" id="an-form-toolbar">
+      				<button type="button" class="btn btn-success" id="an-form-save">Save</button>
+      				<button type="button" class="btn btn-danger" id="an-form-delete">Delete</button>
+      				<button type="button" class="btn btn-default" id="an-form-cancel">Cancel</button>
+      			</div>
       		</form>
       	</div>
       </div>
@@ -141,7 +162,14 @@
   
     <script src="js/jquery-1.11.3.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="js/datatables.min.js"></script>
+    <script type="text/javascript" src="js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="js/dataTables.bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" src="js/buttons.bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/dataTables.keyTable.min.js"></script>
+    <script type="text/javascript" src="js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="js/responsive.bootstrap.min.js"></script>
+    <script type="text/javascript" src="js/dataTables.select.min.js"></script>
     <script src="js/latinise.js"></script>
     <script src="js/anclient.js"></script>
   </body>

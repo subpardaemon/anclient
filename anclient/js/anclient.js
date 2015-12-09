@@ -1,10 +1,11 @@
 /**
  * spec at : https://docs.google.com/document/d/1Qw4u6ftavHCkzi5dxusGqDxuUzKxQRSgYhBVdTvT2Os
+ * taxo at : https://docs.google.com/spreadsheets/d/15nWwAbzCokXck4EDgSx-t3jjl_GoXkDYzjfKFfPD5oE
  */
 
 var anclient = {
 		serverreply: null,
-		lang: 'hu',
+		lang: 'en',
 		taxonomy: {
 			data: {},
 			ready: false,
@@ -88,8 +89,8 @@ var anclient = {
 					if (localStorage.getItem('an-taxonomy')===null) {
 						anclient.comm.ajax_get('http://www.pdx.hu/jobs/an/js/taxonomy.json').then(function(d) {
 							anclient.taxonomy.data = d;
-							anclient.taxonomy.convert_data();
 							localStorage.setItem('an-taxonomy',JSON.stringify(d));
+							anclient.taxonomy.convert_data();
 							console.log('ext: loaded taxonomy db');
 							res();
 						},function(stat,err) {
@@ -189,8 +190,8 @@ var anclient = {
 		},
 		user: {
 			defaultUser: 'user1@assist.network',
-			defaultNode: 'node1',
-			uid: null,
+			defaultNode: '1',
+			uid: '1',
 			uname: 'testuser',
 			sessionid: null,
 			udata: {},
@@ -247,7 +248,7 @@ var anclient = {
 				} else {
 					++slid;
 				}
-				localStorage.getItem('an-localid-'+anclient.user.uid,slid);
+				localStorage.setItem('an-localid-'+anclient.user.uid,slid);
 				return slid;
 			}
 		},
@@ -454,7 +455,7 @@ var anclient = {
 				} else {
 					var res = '';
 					for(var i=0;i<m.length;i++) {
-						res += '<span class="tag label label-default label-sm term" data-role="hint" data-key="'+m[i].ctxchange+'" data-context="'+m[i].ctxchange+'">'+m[i].label_primary+' <span class="category">('+m[i].label_secondary+')</span></span> ';
+						res += '<span class="tag label label-info label-sm term" data-role="hint" data-key="'+m[i].ctxchange+'" data-context="'+m[i].ctxchange+'">'+m[i].label_primary+' <span class="category">('+m[i].label_secondary+')</span></span> ';
 					}
 					$('#an-form-what-hints').html(res);
 				}
@@ -467,7 +468,7 @@ var anclient = {
 				} else {
 					var res = '';
 					for(var i=0;i<m.length;i++) {
-						res += '<span class="tag label label-default label-sm prop" data-role="hint" data-key="'+m[i].key+'">'+m[i].label_primary+'</span> ';
+						res += '<span class="tag label label-info label-sm prop" data-role="hint" data-key="'+m[i].key+'">'+m[i].label_primary+'</span> ';
 					}
 					$('#an-form-attrs-hints').html(res);
 				}
@@ -480,7 +481,7 @@ var anclient = {
 				} else {
 					var res = '';
 					for(var i=0;i<m.length;i++) {
-						res += '<span class="tag label label-default label-sm prop" data-role="hint" data-key="'+m[i].key+'">'+m[i].label_primary+'</span> ';
+						res += '<span class="tag label label-info label-sm prop" data-role="hint" data-key="'+m[i].key+'">'+m[i].label_primary+'</span> ';
 					}
 					$('#an-form-attrsnot-hints').html(res);
 				}
@@ -542,6 +543,7 @@ var anclient = {
 					$('#an-form-attrs,#an-form-attrsnot,#an-form-qty').hide();
 					$('#an-form-attrs-value,#an-form-attrs-entry,#an-form-attrsnot-value,#an-form-attrsnot-entry').val('');
 					$('#an-form-what-entry').show().val('').focus();
+					$('#an-form-toolbar').hide();
 				} else {
 					$('#an-form-what-entry').val('').hide();
 					$('#an-form-what-value').val(v);
@@ -565,9 +567,45 @@ var anclient = {
 					} else {
 						$('#an-form-attrsnot').hide();
 					}
+					$('#an-form-toolbar').show();
 					$('#an-form-attrs-entry').focus();
 				}
 			},
+			/**
+			 * @returns {Object}
+			 */
+			mainform_read: function() {
+				var data = {
+					_valid: true,
+					localid: $('#an-form-entry-id').val(),
+					'what': $('#an-form-what-value').val(),
+					attrs: $('#an-form-attrs-value').val(),
+					attrsnot: $('#an-form-attrsnot-value').val(),
+					qty: parseFloat($('#an-form-qty-value').val()),
+					unit: $('#an-form-unit-value').val(),
+					start:'0000-00-00 00:00:00',
+					end:'0000-00-00 00:00:00',
+					assupply: false,
+					browseable: false
+				};
+				if ($('#an-form-assupply').prop('checked')===true) {
+					data.assupply = true;
+				}
+				if ($('#an-form-browseable').prop('checked')===true) {
+					data.browseable = true;
+				}
+				if (data['what']=='') {
+					data['_valid'] = false;
+				} else {
+					data['attrs'] = data['attrs'].split(',');
+					data['attrsnot'] = data['attrsnot'].split(',');
+				}
+				return data;
+			},
+			/**
+			 * @param {Object} data
+			 * @param {String} ctype ('inventory') one of 'inventory', 'offer' or 'demand'
+			 */
 			mainform_init: function(data,ctype) {
 				if (typeof ctype=='undefined') {
 					ctype = 'inventory';
@@ -577,12 +615,17 @@ var anclient = {
 				$('#an-major-form').data('currenttype',ctype);
 				if (typeof data=='undefined') {
 					data = {
+						localid: 0,
 						'what':'',
+						subtype: 'has',
 						attrs:[],
 						attrsnot:[],
 						qty:0,
 						unit:'pcs',
-						start:'0000-00-00 00:00:00'
+						start:'0000-00-00 00:00:00',
+						end:'0000-00-00 00:00:00',
+						assupply: true,
+						browseable: false
 					};
 				}
 				//WHAT
@@ -645,8 +688,42 @@ var anclient = {
 						anclient.form.remove_attr(v, 'an-form-attrsnot');
 					}
 				});
+				//BUTTONS
+				$('#an-form-save').off('click').on('click',function(evt) {
+					evt.preventDefault();
+					var d = anclient.form.mainform_read();
+					if (d['_valid']===true) {
+						delete(d['_valid']);
+						console.log(d);
+						if (ctype=='inventory') {
+							d['subtype'] = 'has';
+							anclient.inventory.update_item(d).then(function(newd) {
+								console.log('whateva');
+								if (d['localid']!=newd['localid']) {
+									anclient.event.fire('inventory.create', newd);
+								} else {
+									anclient.event.fire('inventory.update', newd);
+								}
+							});
+						}
+					}
+				});
+				$('#an-form-delete').off('click').on('click',function(evt) {
+					evt.preventDefault();
+					var d = anclient.form.mainform_read();
+					if (d['localid']!=0) {
+						d['subtype'] = 'erase';
+						anclient.inventory.update_item(d).then(function(newd) {
+							if (newd['localid']===false) {
+								anclient.event.fire('inventory.erase', newd);
+							}
+						});
+					}
+				});
+				//SET UP
 				anclient.form.set_term(data['what']);
 				if (data['what']!='') {
+					$('#an-form-entry-id').val(data['localid']);
 					if (Object.prototype.toString.call(data['attrs'])!=='[object Array]') {
 						if (data['attrs'].toString().substr(0,1)=='[') {
 							data['attrs'] = JSON.parse(data['attrs']);
@@ -667,6 +744,118 @@ var anclient = {
 					}
 					$('#an-form-qty-value').val(data['qty']);
 					$('#an-form-unit-value').val(data['unit']);
+					if (ctype=='inventory') {
+						$('#an-form-assupply').prop('checked',false);
+						$('#an-form-browseable').prop('checked',false);
+						if (data['assupply']===true) {
+							$('#an-form-assupply').prop('checked',true);
+						}
+						if (data['browseable']===true) {
+							$('#an-form-browseable').prop('checked',true);
+						}
+					}
+				} else {
+					$('#an-form-assupply,#an-form-browseable').prop('checked',true);
+				}
+				if (data['localid']==0) {
+					$('#an-form-delete').hide();
+				} else {
+					$('#an-form-delete').show();
+				}
+			}
+		},
+		inventory: {
+			data: [],
+			pointers: {},
+			table_instance: null,
+			update_pointers: function() {
+				anclient.inventory.pointers = {};
+				for(var i=0;i<anclient.inventory.data.length;i++) {
+					anclient.inventory.pointers[anclient.inventory.data[i]['localid']] = {aindex:i,data:anclient.inventory.data[i]};
+				}
+			},
+			init: function() {
+				return new Promise(function(res,rej) {
+					// this is a promise to allow for syncing with a server
+					var li = localStorage.getItem('an-localinventory-'+anclient.user.uid);
+					if (li!==null) {
+						anclient.inventory.data = JSON.parse(li);
+					}
+					anclient.inventory.update_pointers();
+					anclient.inventory.draw_table();
+					res();
+				});
+			},
+			save: function() {
+				anclient.inventory.update_pointers();
+				localStorage.setItem('an-localinventory-'+anclient.user.uid,JSON.stringify(anclient.inventory.data));
+			},
+			update_item: function(data) {
+				return new Promise(function(res,rej) {
+					// this is a promise to allow for syncing with a server
+					if (data['localid']==0) {
+						//create new item
+						data['localid'] = anclient.user.get_local_unique_id();
+						anclient.inventory.data.push(data);
+					} else {
+						if (typeof anclient.inventory.pointers[data['localid']]=='undefined') {
+							data['localid'] = anclient.user.get_local_unique_id();
+							anclient.inventory.data.push(data);
+						} else {
+							var ai = anclient.inventory.pointers[data['localid']].aindex;
+							if ((data['subtype']=='erase')||(data['what']=='')) {
+								anclient.inventory.data.splice(ai,1);
+								data['localid'] = false;
+							} else {
+								anclient.inventory.data[ai] = data;
+							}
+						}
+					}
+					if ((data['subtype']=='want')||(data['assupply']===true)||(data['browseable']===true)) {
+						//send to server
+						//TODO
+					}
+					anclient.inventory.update_pointers();
+					anclient.inventory.save();
+					anclient.inventory.draw_table();
+					res(data);
+				});
+			},
+			draw_table: function() {
+				if (anclient.inventory.table_instance===null) {
+					anclient.inventory.table_instance = $('#an-store-table').DataTable({
+						data: anclient.inventory.data,
+						columns: [
+						          {
+						        	  data:'localid'
+						          },
+						          {
+						        	  data:'what',
+						        	  render: function(data,type,row,meta) {
+						        		  var o = anclient.taxonomy.get_item_by_path(data);
+						        		  if (type=='display') {
+							        		  var out = '<span class="an-list-term">'+o.labels.primary+'</span><br>';
+							        		  var spl = row['attrs'];
+							        		  //.split(',');
+							        		  for(var i=0;i<spl.length;i++) {
+							        			  out += '<span class="an-list-attr">'+o.props[spl[i]].labels.primary+'</span> ';
+							        		  }
+							        		  return out;
+						        		  }
+						        		  else if ((type=='sort')||(type=='filter')) {
+						        			  return o.labels.primary;
+						        		  }
+						        		  else {
+						        			  return data;
+						        		  }
+						        	  }
+						          },
+						          {data:'qty'},
+						          {data:'unit'}
+						]
+					});
+				} else {
+					anclient.inventory.table_instance.draw();
 				}
 			}
 		},
@@ -751,18 +940,20 @@ var anclient = {
 		},
 		init: function() {
 			anclient.taxonomy.load_data().then(function() {
-				anclient.taxonomy.create_hints(null);
-				$(".dropdown-toggle").dropdown();
-				//if we need to wait for geopos for login, this tool can be used as a promise
-				anclient.geo.get_pos();
-				anclient.comm.ajax_get('/api/').then(function(d) {
-					anclient.serverreply = d;
-					anclient.form.mainform_init();
-					anclient.user.login().then(function() {
-						console.log('user login complete');
+				anclient.inventory.init().then(function() {
+					anclient.taxonomy.create_hints(null);
+					$(".dropdown-toggle").dropdown();
+					//if we need to wait for geopos for login, this tool can be used as a promise
+					anclient.geo.get_pos();
+					anclient.comm.ajax_get('/api/').then(function(d) {
+						anclient.serverreply = d;
+						anclient.form.mainform_init();
+						anclient.user.login().then(function() {
+							console.log('user login complete');
+						});
+					},function(stat,err) {
+						console.log('ext.err: '+stat+' '+err);
 					});
-				},function(stat,err) {
-					console.log('ext.err: '+stat+' '+err);
 				});
 			});
 		}
