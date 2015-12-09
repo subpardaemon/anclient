@@ -95,15 +95,41 @@
       	<div class="panel-body">
       		<form role="form" id="an-major-form">
       			<div class="form-group">
-      				<label>What? (Product or service)</label>
-      				<input type="hidden" name="what" value="">
+      				<label>What? (Product or service <span class="forminfo inventory">in inventory</span><span class="forminfo offer">to offer</span><span class="forminfo demand">to request</span>)</label>
+      				<input type="hidden" name="what" id="an-form-what-value" value="">
       				<input type="text" class="form-control input-sm form-skip" id="an-form-what-entry" placeholder="start typing">
-      				<div id="an-form-what-label">
-      					<span class="tag label label-primary label-md">something <span class="category">(cat/subcat)</span>&nbsp;&nbsp;<span class="glyphicon glyphicon-remove-sign"></span></span>
-      				</div>
       				<div id="an-form-what-hints">
-      					<span class="tag label label-default label-sm">something <span class="category">(cat/subcat)</span></span>
-      					<span class="tag label label-default label-sm">something <span class="category">(cat/subcat)</span></span>
+      				</div>
+      				<div id="an-form-what-label">
+      				</div>
+      			</div>
+      			<div class="form-group" id="an-form-attrs">
+      				<label>Which is like... (<span class="forminfo inventory">Actual</span><span class="forminfo offer">Actual</span><span class="forminfo demand">Required</span> attributes)</label>
+      				<input type="hidden" name="attrs" id="an-form-attrs-value" value="">
+      				<input type="text" class="form-control input-sm form-skip" id="an-form-attrs-entry" placeholder="start typing">
+      				<div id="an-form-attrs-hints">
+      				</div>
+      				<div id="an-form-attrs-labels">
+      				</div>
+      			</div>
+      			<div class="form-group" id="an-form-attrsnot">
+      				<label>And NOT like... (<span class="forminfo inventory">Nonexistent</span><span class="forminfo offer">Nonexistent</span><span class="forminfo demand">Undesired</span> attributes)</label>
+      				<input type="hidden" name="attrsnot" id="an-form-attrsnot-value" value="">
+      				<input type="text" class="form-control input-sm form-skip" id="an-form-attrsnot-entry" placeholder="start typing">
+      				<div id="an-form-attrsnot-hints">
+      				</div>
+      				<div id="an-form-attrsnot-labels">
+      				</div>
+      			</div>
+      			<div class="form-group" id="an-form-qty">
+      				<label>How many? (Quantity)</label>
+      				<div class="row">
+      					<div class="col-xs-6">
+		      				<input type="number" class="form-control" name="qty" value="0" id="an-form-qty-value">
+      					</div>
+      					<div class="col-xs-6">
+		      				<select name="unit" class="form-control" id="an-form-unit-value"></select>
+      					</div>
       				</div>
       			</div>
       		</form>
