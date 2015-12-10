@@ -3,6 +3,10 @@
  * taxo at : https://docs.google.com/spreadsheets/d/15nWwAbzCokXck4EDgSx-t3jjl_GoXkDYzjfKFfPD5oE
  */
 
+if (!Date.now) {
+    Date.now = function() { return new parseInt((Date().getTime())/1000); }
+}
+
 var anclient = {
 		serverreply: null,
 		lang: 'en',
@@ -70,7 +74,7 @@ var anclient = {
 								cat: cg[1],
 								subcat: cg[2],
 								subcatlabel: anclient.taxonomy.data[n].subcats[m].label,
-								catlabel: anclient.taxonomy.data[n].label
+							catlabel: anclient.taxonomy.data[n].label
 							};
 							lp[anclient.taxonomy.data[n].subcats[m].terms[i].code] = lp[anclient.taxonomy.data[n].subcats[m].terms[i].key];
 							re[anclient.taxonomy.data[n].subcats[m].terms[i].code] = lp[anclient.taxonomy.data[n].subcats[m].terms[i].key];
@@ -86,11 +90,15 @@ var anclient = {
 			 */
 			load_data: function() {
 				return new Promise(function(res,rej) {
-					if (localStorage.getItem('an-taxonomy')===null) {
-						anclient.comm.ajax_get('http://www.pdx.hu/jobs/an/js/taxonomy.json').then(function(d) {
+					var lcd = localStorage.getItem('an-taxonomy');
+					var lcv = localStorage.getItem('an-taxonomy-version');
+					if ((lcd===null)||(parseInt(lcv)===null)||(parseInt(anclient.comm.apibase['taxonomy'])>parseInt(lcv))) { 
+						anclient.comm.ajax_get('/api/taxonomy').then(function(d) {
 							anclient.taxonomy.data = d;
 							localStorage.setItem('an-taxonomy',JSON.stringify(d));
+							localStorage.setItem('an-taxonomy-version',anclient.comm.apibase['taxonomy']);
 							anclient.taxonomy.convert_data();
+							anclient.taxonomy.create_hints(null);
 							console.log('ext: loaded taxonomy db');
 							res();
 						},function(stat,err) {
@@ -98,11 +106,9 @@ var anclient = {
 							rej();
 						});
 					} else {
-						/*
-						 * we still need to add the new dictionary discovery feature
-						 */
-						anclient.taxonomy.data = JSON.parse(localStorage.getItem('an-taxonomy'));
+						anclient.taxonomy.data = JSON.parse(lcd);
 						anclient.taxonomy.convert_data();
+						anclient.taxonomy.create_hints(null);
 						res();
 					}
 				});
@@ -195,6 +201,7 @@ var anclient = {
 			uname: 'testuser',
 			sessionid: null,
 			udata: {},
+			lastpeek: null,
 			/**
 			 * @returns {Promise}
 			 */
@@ -206,7 +213,7 @@ var anclient = {
 					user = anclient.user.defaultUser;
 				}
 				return new Promise(function(res,rej) {
-					var params = {email:user,node:node};
+					var params = {email:user,node:node,pos:anclient.geo.current};
 					anclient.comm.ajax_get('/api/login', params).then(function(d) {
 						if (typeof d.success=='undefined') {
 							console.log('login.err: malformed packet');
@@ -216,6 +223,18 @@ var anclient = {
 								anclient.user.uid = d.uid;
 								anclient.user.uname = d.name;
 								anclient.user.sessionid = d.auth_token;
+								$('#an-username').text(anclient.user.uname+'@Node'+anclient.user.defaultNode);
+								if (typeof d.syncdata!='undefined') {
+									if (d.syncdata!==null) {
+										var indata = JSON.parse(d.syncdata);
+										localStorage.setItem('an-localid-'+anclient.user.defaultNode,indata['lastid']);
+										localStorage.setItem('an-localinventory-'+anclient.user.defaultNode,indata['inventory']);
+									} else {
+										anclient.user.syncup();
+									}
+								}
+								anclient.inventory.init();
+								//anclient.user.poll();
 								res();
 							} else {
 								console.log('login.err: login failed');
@@ -226,6 +245,15 @@ var anclient = {
 						console.log('login.err: login packet fault');
 						rej();
 					});
+				});
+			},
+			poll: function() {
+				anclient.comm.ajax_get('/api/notification', {'lastts':anclient.user.lastpeek}).then(function(d) {
+					console.log('poll: ',d);
+					anclient.user.lastpeek = Date.now(); 
+					setTimeout(anclient.user.poll,20000);
+				},function() {
+					setTimeout(anclient.user.poll,20000);
 				});
 			},
 			/**
@@ -242,14 +270,22 @@ var anclient = {
 			 */
 			get_local_unique_id: function() {
 				if (anclient.user.is_logged_in()===false) return null;
-				var slid = localStorage.getItem('an-localid-'+anclient.user.uid);
+				var slid = localStorage.getItem('an-localid-'+anclient.user.defaultNode);
 				if (slid===null) {
 					slid = 1;
 				} else {
 					++slid;
 				}
-				localStorage.setItem('an-localid-'+anclient.user.uid,slid);
+				localStorage.setItem('an-localid-'+anclient.user.defaultNode,slid);
+				anclient.user.syncup();
 				return slid;
+			},
+			syncup: function() {
+				var outdata = {
+					lastid: localStorage.getItem('an-localid-'+anclient.user.defaultNode),
+					inventory: localStorage.getItem('an-localinventory-'+anclient.user.defaultNode)
+				};
+				anclient.comm.ajax_post('/api/session', {syncdata:JSON.stringify(outdata)});
 			}
 		},
 		event: {
@@ -544,6 +580,7 @@ var anclient = {
 					$('#an-form-attrs-value,#an-form-attrs-entry,#an-form-attrsnot-value,#an-form-attrsnot-entry').val('');
 					$('#an-form-what-entry').show().val('').focus();
 					$('#an-form-toolbar').hide();
+					$('#an-form-toolbar2').show();
 				} else {
 					$('#an-form-what-entry').val('').hide();
 					$('#an-form-what-value').val(v);
@@ -567,6 +604,7 @@ var anclient = {
 					} else {
 						$('#an-form-attrsnot').hide();
 					}
+					$('#an-form-toolbar2').hide();
 					$('#an-form-toolbar').show();
 					$('#an-form-attrs-entry').focus();
 				}
@@ -593,12 +631,21 @@ var anclient = {
 				}
 				if ($('#an-form-browseable').prop('checked')===true) {
 					data.browseable = true;
+					data.assupply = true;
 				}
 				if (data['what']=='') {
 					data['_valid'] = false;
 				} else {
-					data['attrs'] = data['attrs'].split(',');
-					data['attrsnot'] = data['attrsnot'].split(',');
+					if (data['attrs']=='') {
+						data['attrs'] = [];
+					} else {
+						data['attrs'] = data['attrs'].split(',');
+					}
+					if (data['attrsnot']=='') {
+						data['attrsnot'] = [];
+					} else {
+						data['attrsnot'] = data['attrsnot'].split(',');
+					}
 				}
 				return data;
 			},
@@ -698,12 +745,12 @@ var anclient = {
 						if (ctype=='inventory') {
 							d['subtype'] = 'has';
 							anclient.inventory.update_item(d).then(function(newd) {
-								console.log('whateva');
 								if (d['localid']!=newd['localid']) {
 									anclient.event.fire('inventory.create', newd);
 								} else {
 									anclient.event.fire('inventory.update', newd);
 								}
+								anclient.screens.set('inventory');
 							});
 						}
 					}
@@ -717,8 +764,14 @@ var anclient = {
 							if (newd['localid']===false) {
 								anclient.event.fire('inventory.erase', newd);
 							}
+							anclient.screens.set('inventory');
 						});
 					}
+				});
+				$('#an-form-cancel,#an-form-cancel2').off('click').on('click',function(evt) {
+					evt.preventDefault();
+					anclient.screens.set('inventory');
+					anclient.alerts.add('boss is the new boss');
 				});
 				//SET UP
 				anclient.form.set_term(data['what']);
@@ -755,6 +808,7 @@ var anclient = {
 						}
 					}
 				} else {
+					$('#an-form-qty-value').val('1');
 					$('#an-form-assupply,#an-form-browseable').prop('checked',true);
 				}
 				if (data['localid']==0) {
@@ -762,6 +816,38 @@ var anclient = {
 				} else {
 					$('#an-form-delete').show();
 				}
+				anclient.screens.set('form-float');
+			}
+		},
+		screens: {
+			init: function() {
+				$('.an-menu').off('click').on('click',function(evt) {
+					evt.preventDefault();
+					$('ul.nav').find('li').removeClass('active');
+					$(this).parents('li').addClass('active');
+					anclient.screens.set($(this).attr('href').substr(4));
+				});
+			},
+			set: function(which) {
+				$('.an-screen').hide();
+				$('#an-'+which).show();
+				if (which=='browse-supplies') {
+					anclient.browser.execute();
+				}
+			}
+		},
+		alerts: {
+			add: function(alertt,classy) {
+				if (typeof classy=='undefined') {
+					classy = 'info';
+				}
+				var al = '<div class="alert alert-'+classy+'"><a href="#">&times;</a> '+alertt+'</div>';
+				$('#an-notifications').append(al);
+				$('.alert a').off('click').on('click',function(evt) {
+					evt.preventDefault();
+					var alr = $(this).parents('div.alert');
+					alr.remove();
+				});
 			}
 		},
 		inventory: {
@@ -773,6 +859,24 @@ var anclient = {
 				for(var i=0;i<anclient.inventory.data.length;i++) {
 					anclient.inventory.pointers[anclient.inventory.data[i]['localid']] = {aindex:i,data:anclient.inventory.data[i]};
 				}
+			},
+			get_item: function(localid) {
+				if (typeof anclient.inventory.pointers[localid]=='undefined') {
+					return null;
+				}
+				return anclient.inventory.pointers[localid]['data'];
+			},
+			get_filtered: function(which) {
+				var x = [];
+				for(var n in anclient.inventory.pointers) {
+					if ((anclient.inventory.pointers[n]['data']['subtype']=='has')&&(which=='inventory')) {
+						x.push(anclient.inventory.pointers[n]['data']);
+					}
+					else if ((anclient.inventory.pointers[n]['data']['subtype']=='want')&&(which=='demand')) {
+						x.push(anclient.inventory.pointers[n]['data']);
+					}
+				}
+				return x;
 			},
 			init: function() {
 				return new Promise(function(res,rej) {
@@ -788,7 +892,8 @@ var anclient = {
 			},
 			save: function() {
 				anclient.inventory.update_pointers();
-				localStorage.setItem('an-localinventory-'+anclient.user.uid,JSON.stringify(anclient.inventory.data));
+				localStorage.setItem('an-localinventory-'+anclient.user.defaultNode,JSON.stringify(anclient.inventory.data));
+				anclient.user.syncup();
 			},
 			update_item: function(data) {
 				return new Promise(function(res,rej) {
@@ -796,10 +901,12 @@ var anclient = {
 					if (data['localid']==0) {
 						//create new item
 						data['localid'] = anclient.user.get_local_unique_id();
+						data['demandid'] = null;
 						anclient.inventory.data.push(data);
 					} else {
 						if (typeof anclient.inventory.pointers[data['localid']]=='undefined') {
 							data['localid'] = anclient.user.get_local_unique_id();
+							data['demandid'] = null;
 							anclient.inventory.data.push(data);
 						} else {
 							var ai = anclient.inventory.pointers[data['localid']].aindex;
@@ -807,13 +914,40 @@ var anclient = {
 								anclient.inventory.data.splice(ai,1);
 								data['localid'] = false;
 							} else {
+								if (typeof anclient.inventory.data[ai]['demandid']=='undefined') {
+									anclient.inventory.data[ai]['demandid'] = null;
+								}
+								data['demandid'] = anclient.inventory.data[ai]['demandid'];
 								anclient.inventory.data[ai] = data;
 							}
 						}
 					}
-					if ((data['subtype']=='want')||(data['assupply']===true)||(data['browseable']===true)) {
-						//send to server
-						//TODO
+					if ((data['localid']!==false)&&((data['subtype']=='want')||(data['assupply']===true)||(data['browseable']===true))) {
+						var coords = anclient.geo.current.split(',');
+						anclient.comm.ajax_post('/api/com',{
+							service:'an',
+							msg: [
+							      {
+							    	  cmd:'s',
+							    	  content: {
+							    		  msgid:data['localid'],
+							    		  'what':data['what'],
+							    		  attrs:data['attrs'],
+							    		  attrsnot:data['attrsnot'],
+							    		  qty:data['qty'],
+							    		  unit:data['unit'],
+							    		  long:coords[0],
+							    		  lat:coords[1],
+							    		  start:data['start'],
+							    		  end:data['end'],
+							    		  reason:'',
+							    		  state:'',
+							    		  parentid:'',
+							    		  'public':data['browseable']
+							    	  }
+							      }
+							      ]
+						});
 					}
 					anclient.inventory.update_pointers();
 					anclient.inventory.save();
@@ -824,21 +958,37 @@ var anclient = {
 			draw_table: function() {
 				if (anclient.inventory.table_instance===null) {
 					anclient.inventory.table_instance = $('#an-store-table').DataTable({
-						data: anclient.inventory.data,
+						data: anclient.inventory.get_filtered('inventory'),
+						order: [[1,'asc']],
+						keys: false,
+						pageLength: 25,
+						dom: 	"<'row'<'col-sm-4'<'#an-inv-tools'>><'col-sm-4'l><'col-sm-4'f>>" +
+								"<'row'<'col-sm-12'tr>>" +
+								"<'row'<'col-sm-5'i><'col-sm-7'p>>",
 						columns: [
 						          {
-						        	  data:'localid'
+						        	  data:'localid',
+						        	  searchable: false,
+						        	  orderable: false,
+						        	  title: 'ID',
+						        	  visible: false,
+						        	  type: 'num'
 						          },
 						          {
 						        	  data:'what',
+						        	  searchable: true,
+						        	  orderable: true,
+						        	  title: 'What',
+						        	  visible: true,
+						        	  type: 'string',
+						        	  width: '50%',
 						        	  render: function(data,type,row,meta) {
 						        		  var o = anclient.taxonomy.get_item_by_path(data);
 						        		  if (type=='display') {
-							        		  var out = '<span class="an-list-term">'+o.labels.primary+'</span><br>';
+							        		  var out = '<span class="an-list-hidden-id">'+row['localid']+'</span><span class="an-list-term">'+o.labels.primary+'</span><br>';
 							        		  var spl = row['attrs'];
-							        		  //.split(',');
 							        		  for(var i=0;i<spl.length;i++) {
-							        			  out += '<span class="an-list-attr">'+o.props[spl[i]].labels.primary+'</span> ';
+							        			  out += '<span class="label label-info">'+o.props[spl[i]].labels.primary+'</span> ';
 							        		  }
 							        		  return out;
 						        		  }
@@ -850,16 +1000,200 @@ var anclient = {
 						        		  }
 						        	  }
 						          },
-						          {data:'qty'},
-						          {data:'unit'}
+						          {
+						        	  data:'qty',
+						        	  searchable:false,
+						        	  orderable:true,
+						        	  title:'Qty',
+						        	  visible:true,
+						        	  className:'text-right',
+						        	  type:'num',
+						        	  render: function(data,type,row,meta) {
+						        		  var o = anclient.taxonomy.get_item_by_path(row['what']);
+						        		  if (type=='display') {
+						        			  return data+' '+o.qtys[row['unit']].labels;
+						        		  } else {
+						        			  return data;
+						        		  }
+						        	  }
+						          },
+						          {
+						        	  searchable:false,
+						        	  orderable:true,
+						        	  title:'Shared',
+						        	  visible:true,
+						        	  type:'string',
+						        	  render: function(data,type,row,meta) {
+						        		  if (row['browseable']===true) {
+						        			  return '<span class="glyphicon glyphicon-asterisk" title="shared as public supply"></span>';
+						        		  }
+						        		  else if (row['assupply']===true) {
+						        			  return '<span class="glyphicon glyphicon-ok" title="shared as supply for matching"></span>';
+						        		  }
+						        		  return '';
+						        	  }
+						          },
+						          {
+						        	  searchable:false,
+						        	  orderable:true,
+						        	  title:'In demand',
+						        	  visible:true,
+						        	  type:'string',
+						        	  render: function(data,type,row,meta) {
+						        		  if (typeof row['demandid']=='undefined') return '';
+						        		  if (row['demandid']!==null) {
+						        			  return '<span class="glyphicon glyphicon-paperclip" title="in demand"></span>';
+						        		  }
+						        		  return '';
+						        	  }
+						          }
 						]
 					});
+					$('#an-inv-tools').html('<button class="btn btn-warning" id="an-inventory-new"><span class="glyphicon glyphicon-plus-sign"></span> New entry</button>');
+					$('#an-inventory-new').off('click').on('click',function(evt) {
+						evt.preventDefault();
+						anclient.form.mainform_init();
+					});
+					$('#an-store-table').off('tap').on('tap',function(evt) {
+						evt.preventDefault();
+						var rowid = $(evt.target).parents('tr').find('.an-list-hidden-id');
+						if (rowid.length>0) {
+							rowid = rowid.text();
+						} else {
+							rowid = null;
+						}
+						if (rowid!==null) {
+							var o = anclient.inventory.get_item(rowid);
+							if (o!==null) {
+								anclient.form.mainform_init(o, 'inventory');
+							}
+						}
+					});
+					$('#an-store-table').off('press').on('press',function(evt) {
+						var row = $(evt.target).parents('tr');
+						if (row.hasClass('selected')) {
+							anclient.inventory.table_instance.row(row.get(0)).deselect();
+						} else {
+							anclient.inventory.table_instance.row(row.get(0)).select();
+						}
+					});
+					//anclient.inventory.table_instance.on('');
 				} else {
+					anclient.inventory.table_instance.clear();
+					anclient.inventory.table_instance.rows.add(anclient.inventory.get_filtered('inventory'));
 					anclient.inventory.table_instance.draw();
 				}
 			}
 		},
+		browser: {
+			data: [],
+			table_instance: null,
+			execute: function() {
+				return new Promise(function(res,rej) {
+					anclient.comm.ajax_get('/api/com', {
+						'service':'an',
+						'query':JSON.stringify({'type':'s'})
+					}).then(function(d) {
+						anclient.browser.draw_table(d['result']['page']);
+						anclient.screens('browse-supplies');
+					});
+				});
+			},
+			draw_table: function(datas) {
+				anclient.browser.data = datas;
+				if (anclient.browser.table_instance===null) {
+					anclient.browser.table_instance = $('#an-public-table').DataTable({
+						data: datas,
+						order: [[1,'asc']],
+						keys: false,
+						pageLength: 25,
+						dom: 	"<'row'<'col-sm-4'<'#an-inv-tools'>><'col-sm-4'l><'col-sm-4'f>>" +
+								"<'row'<'col-sm-12'tr>>" +
+								"<'row'<'col-sm-5'i><'col-sm-7'p>>",
+						columns: [
+						          {
+						        	  data:'msgid',
+						        	  searchable: false,
+						        	  orderable: false,
+						        	  title: 'ID',
+						        	  visible: false,
+						        	  type: 'num'
+						          },
+						          {
+						        	  data:'what',
+						        	  searchable: true,
+						        	  orderable: true,
+						        	  title: 'What',
+						        	  visible: true,
+						        	  type: 'string',
+						        	  width: '50%',
+						        	  render: function(data,type,row,meta) {
+						        		  var o = anclient.taxonomy.get_item_by_path(data);
+						        		  if (type=='display') {
+							        		  var out = '<span class="an-list-hidden-id">'+row['msgid']+'</span><span class="an-list-term">'+o.labels.primary+'</span><br>';
+							        		  var spl = JSON.parse(row['attrs']);
+							        		  for(var i=0;i<spl.length;i++) {
+							        			  out += '<span class="label label-info">'+o.props[spl[i]].labels.primary+'</span> ';
+							        		  }
+							        		  /*
+							        		  var spl = JSON.parse(row['attrsnot']);
+							        		  for(var i=0;i<spl.length;i++) {
+							        			  out += '<span class="label label-danger">- '+o.props[spl[i]].labels.primary+'</span> ';
+							        		  }
+							        		  */
+							        		  return out;
+						        		  }
+						        		  else if ((type=='sort')||(type=='filter')) {
+						        			  return o.labels.primary;
+						        		  }
+						        		  else {
+						        			  return data;
+						        		  }
+						        	  }
+						          },
+						          {
+						        	  data:'qty',
+						        	  searchable:false,
+						        	  orderable:true,
+						        	  title:'Qty',
+						        	  visible:true,
+						        	  className:'text-right',
+						        	  type:'num',
+						        	  render: function(data,type,row,meta) {
+						        		  var o = anclient.taxonomy.get_item_by_path(row['what']);
+						        		  if (type=='display') {
+						        			  return data+' '+o.qtys[row['unit']].labels;
+						        		  } else {
+						        			  return data;
+						        		  }
+						        	  }
+						          }
+						]
+					});
+					$('#an-public-table').off('tap').on('tap',function(evt) {
+						evt.preventDefault();
+						var rowid = $(evt.target).parents('tr').find('.an-list-hidden-id');
+						if (rowid.length>0) {
+							rowid = rowid.text();
+						} else {
+							rowid = null;
+						}
+						if (rowid!==null) {
+							var o = anclient.inventory.get_item(rowid);
+							if (o!==null) {
+								anclient.form.mainform_init(o, 'inventory');
+							}
+						}
+					});
+				} else {
+					anclient.browser.table_instance.clear();
+					anclient.browser.table_instance.rows.add(datas);
+					anclient.browser.table_instance.draw();
+				}
+			}
+		},
 		comm: {
+			apibase: {},
 			urlprefix: 'http://assist-network.herokuapp.com/',
 			ajax_post: function(url,params) {
 				if (typeof params=='undefined') {
@@ -886,35 +1220,38 @@ var anclient = {
 				if (typeof meth=='undefined') {
 					meth = 'GET';
 				}
-				//params['auth_token'] = anclient.user.sessionid;
+				params['auth_token'] = anclient.user.sessionid;
+				params['node'] = anclient.user.defaultNode;
 				return new Promise(function(res,rej) {
-					$.ajax(url,{
-						beforeSend:function() {
-							$('.loading').show();
-							return true;
-						},
-						//cache: false,
-						contentType:'application/json',
-						//crossDomain: true,
-						//data:{params:JSON.stringify(params)},
-						data:JSON.stringify(params),
-						dataType:'json',
-						error:function(xhr,tst,err) {
-							$('.loading').hide();
-							anclient.event.fire('comm.error', {type:'ajax',error:err,errtx:tst,xhr:xhr,url:url,params:params});
-							rej(tst,err);
-						},
-						method:meth,
-						processData: false,
-						success:function(dt) {
-							$('.loading').hide();
-							anclient.event.fire('comm.success', {type:'ajax',url:url,params:params,result:dt});
-							res(dt);
-						}
-					});
+					var ajaxparam = {
+							beforeSend:function() {
+								$('.loading').show();
+								return true;
+							},
+							dataType:'json',
+							error:function(xhr,tst,err) {
+								$('.loading').hide();
+								anclient.event.fire('comm.error', {type:'ajax',error:err,errtx:tst,xhr:xhr,url:url,params:params});
+								rej(tst,err);
+							},
+							method:meth,
+							success:function(dt) {
+								$('.loading').hide();
+								anclient.event.fire('comm.success', {type:'ajax',url:url,params:params,result:dt});
+								res(dt);
+							}
+						};
+					if (meth=='GET') {
+						ajaxparam['data'] = params;
+					}
+					else if (meth=='POST') {
+						ajaxparam['contentType'] = 'application/json';
+						ajaxparam['data'] = JSON.stringify(params);
+						ajaxparam['processData'] = false;
+					}
+					$.ajax(url,ajaxparam);
 				});
 			}
-			//http://assist-network.herokuapp.com/api/login?params={%22email%22:%22user1@assist.network%22,%22node%22:%22node1%22}
 		},
 		geo: {
 			current: '47.539063,19.049691',
@@ -926,7 +1263,7 @@ var anclient = {
 						anclient.geo.current = localStorage.getItem('an-lastlatlon');
 					}
 					navigator.geolocation.getCurrentPosition(function(psn) {
-						anclient.geo.current = psn.coords.latitude.toString()+psn.coords.longitude.toString();
+						anclient.geo.current = psn.coords.latitude.toString()+','+psn.coords.longitude.toString();
 						localStorage.setItem('an-lastlatlon',anclient.geo.current);
 						anclient.event.fire('geo.position', anclient.geo.current);
 						res(anclient.geo.current);
@@ -939,20 +1276,28 @@ var anclient = {
 			}
 		},
 		init: function() {
-			anclient.taxonomy.load_data().then(function() {
-				anclient.inventory.init().then(function() {
-					anclient.taxonomy.create_hints(null);
-					$(".dropdown-toggle").dropdown();
-					//if we need to wait for geopos for login, this tool can be used as a promise
-					anclient.geo.get_pos();
-					anclient.comm.ajax_get('/api/').then(function(d) {
-						anclient.serverreply = d;
-						anclient.form.mainform_init();
+			$('#an-username').text('');
+			$(".dropdown-toggle").dropdown();
+			//if we need to wait for geopos for login, this tool can be used as a promise
+			anclient.geo.get_pos();
+			anclient.comm.ajax_get('/api/').then(function(d) {
+				anclient.comm.apibase = d;
+				anclient.taxonomy.load_data().then(function() {
+					anclient.screens.init();
+					anclient.screens.set('dashboard');
+					$('#an-login-node1').off('click').on('click',function(evt) {
+						evt.preventDefault();
+						anclient.user.defaultNode = '1';
 						anclient.user.login().then(function() {
-							console.log('user login complete');
+							anclient.screens.set('inventory');
 						});
-					},function(stat,err) {
-						console.log('ext.err: '+stat+' '+err);
+					});
+					$('#an-login-node2').off('click').on('click',function(evt) {
+						evt.preventDefault();
+						anclient.user.defaultNode = '2';
+						anclient.user.login().then(function() {
+							anclient.screens.set('inventory');
+						});
 					});
 				});
 			});

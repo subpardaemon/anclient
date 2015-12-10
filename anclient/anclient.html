@@ -41,6 +41,15 @@
 	.tag span.glyphicon {
 		margin-top: 2px;
 	}
+	.panel-darker {
+		background-color: #586573;
+	}
+	.an-list-term {
+		font-size: 110%;
+	}
+	.an-list-hidden-id {
+		display: none;
+	}
     </style>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -63,8 +72,8 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#an-dash" class="an-menu">Dashboard</a></li>
-            <li><a href="#an-store" class="an-menu">Inventory</a></li>
+            <li><a href="#an-dashboard" class="an-menu">Dashboard</a></li>
+            <li><a href="#an-inventory" class="an-menu">Inventory</a></li>
             <li class="dropdown">
               <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Network <span class="caret"></span></a>
               <ul class="dropdown-menu">
@@ -73,7 +82,7 @@
                 <li role="separator" class="divider"></li>
                 <li class="dropdown-header">Browse...</li>
                 <li><a href="#an-browse-demands" class="an-menu">Requests by others</a></li>
-                <li><a href="#an-browse-supplies" class="an-menu">Open supplies</a></li>
+                <li><a href="#an-browse-supplies" class="an-menu">Public supplies</a></li>
               </ul>
             </li>
           </ul>
@@ -85,12 +94,66 @@
     </nav>
     <br><br><br>
     
-    <div class="container" id="an-store">
-    	<table id="an-store-table">
-    	</table>
+    <div class="container" id="an-notifications">
+    </div>
+    
+    <div class="container an-screen" id="an-dashboard">
+      <div class="panel panel-success">
+      	<div class="panel-heading">
+      		<div class="panel-title">Dashboard</div>
+      	</div>
+      	<div class="panel-body">
+      		<div class="row">
+      			<div class="col-sm-4">
+      				<button class="btn btn-lg btn-block btn-info" id="an-login-node1">Login as node1</button>
+      			</div>
+      			<div class="col-sm-4">
+      			</div>
+      			<div class="col-sm-4">
+      				<button class="btn btn-lg btn-block btn-info" id="an-login-node2">Login as node2</button>
+      			</div>
+      		</div>
+    	</div>
+     </div>
     </div>
 
-    <div class="container" id="an-form-float">
+    <div class="container an-screen" id="an-inventory">
+      <div class="panel panel-primary panel-darker">
+      	<div class="panel-heading">
+      		<div class="panel-title">Inventory</div>
+      	</div>
+      	<div class="panel-body">
+	    	<table id="an-store-table" class="table table-striped table-bordered" cellspacing="0" width="100%">
+    		</table>
+    	</div>
+     </div>
+    </div>
+
+    <div class="container an-screen" id="an-my-demands">
+      <div class="panel panel-danger panel-darker">
+      	<div class="panel-heading">
+      		<div class="panel-title">My requests</div>
+      	</div>
+      	<div class="panel-body">
+	    	<table id="an-demands-table" class="table table-striped table-bordered" cellspacing="0" width="100%">
+    		</table>
+    	</div>
+     </div>
+    </div>
+
+    <div class="container an-screen" id="an-browse-supplies">
+      <div class="panel panel-success panel-darker">
+      	<div class="panel-heading">
+      		<div class="panel-title">Browse public supplies</div>
+      	</div>
+      	<div class="panel-body">
+	    	<table id="an-public-table" class="table table-striped table-bordered" cellspacing="0" width="100%">
+    		</table>
+    	</div>
+     </div>
+    </div>
+
+    <div class="container an-screen" id="an-form-float">
       <div class="panel panel-default">
       	<div class="panel-heading">
       		<div class="panel-title">Edit data</div>
@@ -145,13 +208,16 @@
       			<div class="checkbox forminfo inventory">
       				<label>
       					<input type="checkbox" name="browseable" value="yes" id="an-form-browseable">
-      					List this item when others browse for available supplies without explicitly matching requests
+      					List this item as a public supply
       				</label>
       			</div>
       			<div role="toolbar" class="btn-toolbar" id="an-form-toolbar">
       				<button type="button" class="btn btn-success" id="an-form-save">Save</button>
       				<button type="button" class="btn btn-danger" id="an-form-delete">Delete</button>
       				<button type="button" class="btn btn-default" id="an-form-cancel">Cancel</button>
+      			</div>
+      			<div role="toolbar" class="btn-toolbar" id="an-form-toolbar2">
+      				<button type="button" class="btn btn-default" id="an-form-cancel2">Cancel</button>
       			</div>
       		</form>
       	</div>
@@ -161,6 +227,7 @@
     </div> <!-- /container -->
   
     <script src="js/jquery-1.11.3.min.js"></script>
+    <script src="js/jquery.finger.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script type="text/javascript" src="js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="js/dataTables.bootstrap.min.js"></script>
