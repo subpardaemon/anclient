@@ -7,9 +7,16 @@ if (!Date.now) {
     Date.now = function() { return new parseInt((Date().getTime())/1000); }
 }
 
+
+/**
+ * @namespace anclient
+ */
 var anclient = {
 		serverreply: null,
 		lang: 'en',
+		/**
+		 * @memberOf anclient
+		 */
 		taxonomy: {
 			data: {},
 			ready: false,
@@ -22,6 +29,8 @@ var anclient = {
 			 * - injecting pointers in terms to local props and qtys
 			 * - creating prop mixins from top category to subcategories
 			 * - a few other tricks
+			 * @memberOf anclient.taxonomy
+			 * @private
 			 */
 			convert_data: function() {
 				var n,m,o,i,hp,lp,cg,re;
@@ -87,13 +96,17 @@ var anclient = {
 			},
 			/**
 			 * @returns {Promise}
+			 * @private
 			 */
 			load_data: function() {
 				return new Promise(function(res,rej) {
 					var lcd = localStorage.getItem('an-taxonomy');
 					var lcv = localStorage.getItem('an-taxonomy-version');
+					console.log('tax: taxonomy local data:',lcd,lcv);
 					if ((lcd===null)||(parseInt(lcv)===null)||(parseInt(anclient.comm.apibase['taxonomy'])>parseInt(lcv))) { 
+						console.log('tax: load taxonomy from server');
 						anclient.comm.ajax_get('/api/taxonomy').then(function(d) {
+							console.log('tax: loaded taxonomy from server');
 							anclient.taxonomy.data = d;
 							localStorage.setItem('an-taxonomy',JSON.stringify(d));
 							localStorage.setItem('an-taxonomy-version',anclient.comm.apibase['taxonomy']);
@@ -204,6 +217,7 @@ var anclient = {
 			lastpeek: null,
 			/**
 			 * @returns {Promise}
+			 * @memberOf anclient.user
 			 */
 			login: function(user,node) {
 				if (typeof node=='undefined') {
@@ -290,6 +304,9 @@ var anclient = {
 		},
 		event: {
 			listeners: {},
+			/**
+			 * @memberOf anclient.event
+			 */
 			on: function(evtype,cb) {
 				if (typeof anclient.event.listeners[evtype]=='undefined') {
 					anclient.event.listeners[evtype] = [];
@@ -334,6 +351,7 @@ var anclient = {
 			 * Converts an ArrayBuffer to a base64-encoded String.
 			 * @param {ArrayBuffer} buffer
 			 * @returns {String}
+			 * @memberOf anclient.tool
 			 */
 			abuf2b64: function( buffer ) {
 			    var binary = '';
@@ -353,6 +371,7 @@ var anclient = {
 			 * Skips all form items that have CSS class 'form-skip'. 
 			 * @param {String} formslc CSS selector for the form
 			 * @return {Promise}
+			 * @memberOf anclient.form
 			 */
 			data_to_object: function(formslc) {
 				return new Promise(function(resolve,reject) {
@@ -820,6 +839,9 @@ var anclient = {
 			}
 		},
 		screens: {
+			/**
+			 * @memberOf anclient.screens
+			 */
 			init: function() {
 				$('.an-menu').off('click').on('click',function(evt) {
 					evt.preventDefault();
@@ -837,6 +859,9 @@ var anclient = {
 			}
 		},
 		alerts: {
+			/**
+			 * @memberOf anclient.alerts
+			 */
 			add: function(alertt,classy) {
 				if (typeof classy=='undefined') {
 					classy = 'info';
@@ -854,6 +879,9 @@ var anclient = {
 			data: [],
 			pointers: {},
 			table_instance: null,
+			/**
+			 * @memberOf anclient.inventory
+			 */
 			update_pointers: function() {
 				anclient.inventory.pointers = {};
 				for(var i=0;i<anclient.inventory.data.length;i++) {
@@ -1088,6 +1116,9 @@ var anclient = {
 		browser: {
 			data: [],
 			table_instance: null,
+			/**
+			 * @memberOf anclient.browser
+			 */
 			execute: function() {
 				return new Promise(function(res,rej) {
 					anclient.comm.ajax_get('/api/com', {
@@ -1195,6 +1226,9 @@ var anclient = {
 		comm: {
 			apibase: {},
 			urlprefix: 'http://assist-network.herokuapp.com/',
+			/**
+			 * @memberOf anclient.comm
+			 */
 			ajax_post: function(url,params) {
 				if (typeof params=='undefined') {
 					params = {};
@@ -1255,6 +1289,10 @@ var anclient = {
 		},
 		geo: {
 			current: '47.539063,19.049691',
+			/**
+			 * @memberOf anclient.geo
+			 * @public
+			 */
 			get_pos: function() {
 				return new Promise(function(res,rej) {
 					if (localStorage.getItem('an-lastlatlon')===null) {
